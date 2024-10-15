@@ -4,7 +4,7 @@ use hex::{decode, encode};
 use sha3::{Digest, Keccak256};
 use std::io::{self, Write};
 
-// Ethereum private key'den şifreleme anahtarı türet
+
 fn derive_key_from_private_key(private_key_hex: &str) -> [u8; 32] {
     let private_key_bytes = decode(private_key_hex).expect("Invalid hex string");
 
@@ -17,7 +17,7 @@ fn derive_key_from_private_key(private_key_hex: &str) -> [u8; 32] {
     key
 }
 
-// 16 byte blok boyutuna göre padding uygula
+
 fn pad_data(data: &[u8]) -> Vec<u8> {
     let mut padded_data = data.to_vec();
     let pad_length = 16 - (data.len() % 16);
@@ -25,7 +25,7 @@ fn pad_data(data: &[u8]) -> Vec<u8> {
     padded_data
 }
 
-// Padding'i kaldır (decrypt sonrası)
+
 fn unpad_data(padded_data: &[u8]) -> Vec<u8> {
     let pad_length = *padded_data.last().unwrap() as usize;
     padded_data[..padded_data.len() - pad_length].to_vec()
@@ -62,7 +62,7 @@ fn encrypt_data(key: &[u8; 32], iv: &[u8; 16], data: &[u8]) -> Vec<u8> {
     blocks
 }
 
-// AES-256 CBC ile şifreyi çözme
+
 fn decrypt_data(key: &[u8; 32], iv: &[u8; 16], encrypted_data: &[u8]) -> Vec<u8> {
     let mut cipher = Aes256::new(GenericArray::from_slice(key));
     let mut blocks = encrypted_data.to_vec();
@@ -94,11 +94,11 @@ fn main() {
 
     // Kullanıcıdan 4 haneli PIN iste
     let mut pin_input = String::new();
-    print!("4 haneli PIN girin: ");
+    print!("Please fill 4 digit PIN: ");
     io::stdout().flush().unwrap();
     io::stdin().read_line(&mut pin_input).expect("Failed to read input");
     let pin = pin_input.trim();
-    assert!(pin.len() == 4, "IV (PIN) 4 digit olmalıdır!");
+    assert!(pin.len() == 4, "4 digit IV (PIN) necessary");
 
     // PIN'den IV oluştur (hash ile)
     let iv = derive_iv_from_pin(pin);
