@@ -2,6 +2,7 @@ use aes::Aes256;
 use aes::cipher::{generic_array::GenericArray, BlockEncryptMut, BlockDecryptMut, KeyInit};
 use hex::{decode, encode};
 use sha3::{Digest, Keccak256};
+use secp256k1::{Secp256k1, PublicKey}; // secp256k1 crate'i ekle
 use std::io::{self, Write};
 
 // Ethereum private key'den şifreleme anahtarı türet
@@ -15,6 +16,14 @@ fn derive_key_from_private_key(private_key_hex: &str) -> [u8; 32] {
     let mut key = [0u8; 32];
     key.copy_from_slice(&result[..32]);
     key
+}
+
+// Public key'i private key'den türet
+fn derive_public_key(private_key_hex: &str) -> PublicKey {
+    let secp = Secp256k1::new();
+    let private_key = decode(private_key_hex).expect("Invalid hex string");
+    let secret_key = secp256k1::SecretKey::from_slice(&private_key).expect("Invalid private key");
+    PublicKey::from_secret_key(&secp, &secret_key)
 }
 
 // 16 byte blok boyutuna göre padding uygula
@@ -46,8 +55,7 @@ fn derive_iv_from_pin(pin: &str) -> [u8; 16] {
 fn encrypt_data(key: &[u8; 32], iv: &[u8; 16], data: &[u8]) -> Vec<u8> {
     let mut cipher = Aes256::new(GenericArray::from_slice(key));
     let mut blocks = pad_data(data);
-    
-    // İlk blok için IV kullanımı
+
     let mut previous_block = iv.to_vec(); // IV'yi önceki bloğa atıyoruz
 
     for chunk in blocks.chunks_mut(16) {
@@ -89,6 +97,10 @@ fn main() {
     io::stdin().read_line(&mut private_key_input).expect("Failed to read input");
     let private_key = private_key_input.trim();
 
+    // Public key'i private key'den türet
+    let public_key = derive_public_key(private_key);
+    let public_key_hex = encode(public_key.serialize_uncompressed()); // Public key'i hex formatında al
+
     // Şifreleme anahtarını private key'den türet
     let key = derive_key_from_private_key(private_key);
 
@@ -113,8 +125,4 @@ fn main() {
     // Veriyi şifrele
     let encrypted_data = encrypt_data(&key, &iv, data);
     println!("Encrypted data (hex): {}", encode(&encrypted_data));
-
-    // Şifreyi çöz
-    let decrypted_data = decrypt_data(&key, &iv, &encrypted_data);
-    println!("Decrypted data: {}", String::from_utf8(decrypted_data).unwrap());
 }
